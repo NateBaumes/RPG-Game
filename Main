@@ -1,0 +1,243 @@
+using System;
+using System.Collections.Generic;
+
+// RPG Game Namespace
+namespace ConsoleRPG
+{
+    // Enum for different types of characters
+    enum CharacterClass
+    {
+        Warrior,
+        Mage,
+        Archer
+    }
+
+    // Base class for characters
+    class Character
+    {
+        public string Name { get; set; }
+        public int Health { get; set; }
+        public int Attack { get; set; }
+        public CharacterClass Class { get; set; }
+        public List<Item> Inventory { get; set; }
+
+        public Character(string name, CharacterClass characterClass)
+        {
+            Name = name;
+            Health = 100;
+            Attack = 10;
+            Class = characterClass;
+            Inventory = new List<Item>();
+        }
+
+        // Method to attack another character
+        public void AttackCharacter(Character target)
+        {
+            Console.WriteLine($"{Name} attacks {target.Name} for {Attack} damage.");
+            target.Health -= Attack;
+        }
+
+        // Method to check if the character is alive
+        public bool IsAlive()
+        {
+            return Health > 0;
+        }
+
+        // Method to display character information
+        public void DisplayStatus()
+        {
+            Console.WriteLine($"{Name} ({Class}): Health = {Health}, Attack = {Attack}");
+        }
+
+        // Method to add an item to the character's inventory
+        public void AddItemToInventory(Item item)
+        {
+            Inventory.Add(item);
+            Console.WriteLine($"{item.Name} added to inventory.");
+        }
+
+        // Method to use an item from the inventory
+        public void UseItem(string itemName)
+        {
+            Item item = Inventory.Find(i => i.Name.ToLower() == itemName.ToLower());
+            if (item != null)
+            {
+                if (item.Name == "Potion")
+                {
+                    Health += item.Value;
+                    Console.WriteLine($"You used a {item.Name}. Health increased by {item.Value}.");
+                    Inventory.Remove(item);
+                }
+                else
+                {
+                    Console.WriteLine("You can't use this item.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Item not found in inventory.");
+            }
+        }
+    }
+
+    // Class for items in the game
+    class Item
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int Value { get; set; }
+
+        public Item(string name, string description, int value)
+        {
+            Name = name;
+            Description = description;
+            Value = value;
+        }
+
+        // Method to display item information
+        public void DisplayInfo()
+        {
+            Console.WriteLine($"{Name}: {Description} (Value: {Value})");
+        }
+    }
+
+    // Class for the game world
+    class World
+    {
+        public List<Character> Enemies { get; set; }
+        public List<Item> Loot { get; set; }
+
+        public World()
+        {
+            Enemies = new List<Character>
+            {
+                new Character("Goblin", CharacterClass.Warrior) { Health = 50, Attack = 5 },
+                new Character("Orc", CharacterClass.Warrior) { Health = 70, Attack = 8 },
+                new Character("Dark Mage", CharacterClass.Mage) { Health = 40, Attack = 12 }
+            };
+
+            Loot = new List<Item>
+            {
+                new Item("Sword", "A sharp blade.", 10),
+                new Item("Potion", "Restores 20 health.", 20),
+                new Item("Bow", "A ranged weapon.", 8)
+            };
+        }
+
+        // Method to display available enemies
+        public void DisplayEnemies()
+        {
+            Console.WriteLine("Enemies:");
+            for (int i = 0; i < Enemies.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {Enemies[i].Name} - Health: {Enemies[i].Health}, Attack: {Enemies[i].Attack}");
+            }
+        }
+
+        // Method to display available loot
+        public void DisplayLoot()
+        {
+            Console.WriteLine("Loot:");
+            for (int i = 0; i < Loot.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {Loot[i].Name} - {Loot[i].Description} (Value: {Loot[i].Value})");
+            }
+        }
+    }
+
+    // Main game class
+    class Game
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Welcome to the Console RPG Game!");
+            Console.Write("Enter your character's name: ");
+            string playerName = Console.ReadLine();
+
+            Console.WriteLine("Choose your class: 1. Warrior 2. Mage 3. Archer");
+            int classChoice = int.Parse(Console.ReadLine());
+            CharacterClass playerClass = (CharacterClass)(classChoice - 1);
+
+            Character player = new Character(playerName, playerClass);
+            World gameWorld = new World();
+
+            bool gameRunning = true;
+
+            while (gameRunning)
+            {
+                Console.WriteLine("\n1. Explore\n2. Show Inventory\n3. Use Item\n4. Exit");
+                int choice = int.Parse(Console.ReadLine());
+
+                switch (choice)
+                {
+                    case 1:
+                        Console.WriteLine("You encounter an enemy!");
+                        gameWorld.DisplayEnemies();
+                        Console.Write("Choose an enemy to attack (1, 2, 3): ");
+                        int enemyChoice = int.Parse(Console.ReadLine()) - 1;
+
+                        if (enemyChoice >= 0 && enemyChoice < gameWorld.Enemies.Count)
+                        {
+                            Character enemy = gameWorld.Enemies[enemyChoice];
+                            player.AttackCharacter(enemy);
+
+                            if (!enemy.IsAlive())
+                            {
+                                Console.WriteLine($"{enemy.Name} has been defeated!");
+                                gameWorld.Enemies.Remove(enemy);
+
+                                if (gameWorld.Enemies.Count == 0)
+                                {
+                                    Console.WriteLine("Congratulations! You've defeated all enemies!");
+                                    gameRunning = false;
+                                }
+
+                                Console.WriteLine("You found loot!");
+                                gameWorld.DisplayLoot();
+                                Console.Write("Choose loot to take (1, 2, 3): ");
+                                int lootChoice = int.Parse(Console.ReadLine()) - 1;
+
+                                if (lootChoice >= 0 && lootChoice < gameWorld.Loot.Count)
+                                {
+                                    Item loot = gameWorld.Loot[lootChoice];
+                                    player.AddItemToInventory(loot);
+                                    gameWorld.Loot.Remove(loot);
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine($"{enemy.Name} attacks back!");
+                                enemy.AttackCharacter(player);
+                                if (!player.IsAlive())
+                                {
+                                    Console.WriteLine("You have been defeated!");
+                                    gameRunning = false;
+                                }
+                            }
+                        }
+                        break;
+                    case 2:
+                        Console.WriteLine("Your Inventory:");
+                        foreach (var item in player.Inventory)
+                        {
+                            item.DisplayInfo();
+                        }
+                        break;
+                    case 3:
+                        Console.Write("Enter the name of the item to use: ");
+                        string itemName = Console.ReadLine();
+                        player.UseItem(itemName);
+                        break;
+                    case 4:
+                        gameRunning = false;
+                        break;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        break;
+                }
+            }
+
+            Console.WriteLine("Game Over.");
+        }
+    }
+}
